@@ -1,0 +1,8 @@
+package com.casestudy.credit.exception;
+
+
+public class EntityAlreadyExistsException extends RuntimeException {
+    public EntityAlreadyExistsException(String message) {
+        super(message);
+    }
+}
