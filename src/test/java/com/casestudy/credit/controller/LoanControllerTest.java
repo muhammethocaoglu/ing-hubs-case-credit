@@ -1,7 +1,7 @@
 package com.casestudy.credit.controller;
 
 import com.casestudy.credit.CleanupH2DatabaseTestListener;
-import com.casestudy.credit.controller.dto.*;
+import com.casestudy.credit.controller.dto.CreateLoanRequest;
 import com.casestudy.credit.entity.Customer;
 import com.casestudy.credit.repository.CustomerRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -15,14 +15,10 @@ import org.springframework.test.context.TestExecutionListeners;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.context.support.DependencyInjectionTestExecutionListener;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.MvcResult;
 
 import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.List;
 
-import static org.hamcrest.Matchers.*;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @RunWith(SpringRunner.class)
