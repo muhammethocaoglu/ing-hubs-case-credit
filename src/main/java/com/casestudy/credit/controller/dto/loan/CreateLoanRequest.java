@@ -1,4 +1,4 @@
-package com.casestudy.credit.controller.dto;
+package com.casestudy.credit.controller.dto.loan;
 
 import com.casestudy.credit.controller.validator.OneOf;
 import jakarta.validation.constraints.DecimalMax;

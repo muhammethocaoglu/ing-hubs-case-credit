@@ -1,17 +1,19 @@
 package com.casestudy.credit.service;
 
-import com.casestudy.credit.controller.dto.*;
-import com.casestudy.credit.entity.Customer;
-import com.casestudy.credit.entity.Loan;
-import com.casestudy.credit.entity.LoanInstallment;
+import com.casestudy.credit.controller.dto.installment.ListLoanInstallmentResponseItem;
+import com.casestudy.credit.controller.dto.loan.*;
+import com.casestudy.credit.entity.*;
 import com.casestudy.credit.exception.BusinessException;
 import com.casestudy.credit.exception.ResourceNotFoundException;
+import com.casestudy.credit.exception.UnauthorizedException;
 import com.casestudy.credit.repository.CustomerRepository;
 import com.casestudy.credit.repository.LoanInstallmentRepository;
 import com.casestudy.credit.repository.LoanRepository;
 import com.casestudy.credit.repository.LoanSpecification;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -19,6 +21,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -35,6 +38,7 @@ public class LoanService {
         Customer customer = customerRepository.findById(createLoanRequest.getCustomerId())
                 .orElseThrow(() -> new ResourceNotFoundException(String.format("Customer with id %s not found",
                         createLoanRequest.getCustomerId())));
+        evaluateUserAuthorization(customer);
         BigDecimal totalLoanAmount = createLoanRequest.getAmount()
                 .multiply(BigDecimal.ONE.add(createLoanRequest.getInterestRate()));
         if (customer.getCreditLimit().subtract(customer.getUsedCreditLimit()).compareTo(totalLoanAmount) < 0) {
@@ -69,7 +73,9 @@ public class LoanService {
     }
 
     public List<ListLoanResponseItem> list(ListLoanRequest listLoanRequest) {
-
+        evaluateUserAuthorization(customerRepository.findById(listLoanRequest.getCustomerId())
+                .orElseThrow(() -> new ResourceNotFoundException(String.format("Customer with id %s not found",
+                        listLoanRequest.getCustomerId()))));
         Specification<Loan> loanSpec = Specification
                 .where(LoanSpecification.hasCustomerId(listLoanRequest.getCustomerId()));
         if (listLoanRequest.getNumberOfInstallment() != null) {
@@ -90,10 +96,31 @@ public class LoanService {
                 .toList();
     }
 
+    public List<ListLoanInstallmentResponseItem> listInstallments(Long loanId) {
+        Optional<Loan> loanOptional = loanRepository.findById(loanId);
+        if (loanOptional.isEmpty()) {
+            return List.of();
+        }
+        Loan loan = loanOptional.get();
+        evaluateUserAuthorization(loan.getCustomer());
+        return loan.getLoanInstallments()
+                .stream()
+                .map(loanInstallment -> ListLoanInstallmentResponseItem.builder()
+                        .id(loanInstallment.getId())
+                        .amount(loanInstallment.getAmount())
+                        .paidAmount(loanInstallment.getPaidAmount())
+                        .dueDate(loanInstallment.getDueDate())
+                        .paymentDate(loanInstallment.getPaymentDate())
+                        .isPaid(loanInstallment.getIsPaid())
+                        .build())
+                .toList();
+    }
+
     @Transactional
     public PayLoanResponse pay(PayLoanRequest payLoanRequest) {
         Loan loan = loanRepository.findById(payLoanRequest.getId()).orElseThrow(() -> new ResourceNotFoundException(String.format("Loan with id %s not found",
                 payLoanRequest.getId())));
+        evaluateUserAuthorization(loan.getCustomer());
         if (loan.getIsPaid()) {
             return PayLoanResponse.builder()
                     .isLoanPaid(true)
@@ -131,5 +158,16 @@ public class LoanService {
                 .totalAmountSpent(totalAmountSpent)
                 .isLoanPaid(isLoanPaid)
                 .build();
+    }
+
+
+    private static void evaluateUserAuthorization(Customer customer) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        User user = (User) authentication.getPrincipal();
+        if (user.getRole() == RoleEnum.CUSTOMER) {
+            if (!customer.getName().equals(user.getName()) || !customer.getSurname().equals(user.getSurname())) {
+                throw new UnauthorizedException("Users with customer role can operate for themselves");
+            }
+        }
     }
 }

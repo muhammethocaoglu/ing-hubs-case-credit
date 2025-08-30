@@ -1,22 +1,47 @@
 package com.casestudy.credit.config;
 
-import org.springframework.security.authentication.BadCredentialsException;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.authority.AuthorityUtils;
+import com.casestudy.credit.controller.dto.user.LoginUserRequest;
+import com.casestudy.credit.controller.dto.user.RegisterUserRequest;
+import com.casestudy.credit.entity.RoleEnum;
+import com.casestudy.credit.entity.User;
+import com.casestudy.credit.repository.UserRepository;
+import lombok.RequiredArgsConstructor;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
-import jakarta.servlet.http.HttpServletRequest;
-
+@Service
+@RequiredArgsConstructor
 public class AuthenticationService {
 
-    private static final String AUTH_TOKEN_HEADER_NAME = "X-API-KEY";
-    private static final String AUTH_TOKEN = "xyz_tvh_342_cfg";
+    private final UserRepository userRepository;
 
-    public static Authentication getAuthentication(HttpServletRequest request) {
-        String apiKey = request.getHeader(AUTH_TOKEN_HEADER_NAME);
-        if (apiKey == null || !apiKey.equals(AUTH_TOKEN)) {
-            throw new BadCredentialsException("Invalid API Key");
-        }
+    private final PasswordEncoder passwordEncoder;
 
-        return new ApiKeyAuthentication(apiKey, AuthorityUtils.NO_AUTHORITIES);
+    private final AuthenticationManager authenticationManager;
+
+    @Transactional
+    public User register(RegisterUserRequest registerUserRequest) {
+        return userRepository.save(User.builder()
+                .name(registerUserRequest.getName())
+                .surname(registerUserRequest.getSurname())
+                .email(registerUserRequest.getEmail())
+                .password(passwordEncoder.encode(registerUserRequest.getPassword()))
+                .role(RoleEnum.CUSTOMER)
+                .build());
+    }
+
+    public User login(LoginUserRequest loginUserRequest) {
+        authenticationManager.authenticate(
+                new UsernamePasswordAuthenticationToken(
+                        loginUserRequest.getEmail(),
+                        loginUserRequest.getPassword()
+                )
+        );
+
+        return userRepository.findByEmail(loginUserRequest.getEmail())
+                .orElseThrow();
     }
 }

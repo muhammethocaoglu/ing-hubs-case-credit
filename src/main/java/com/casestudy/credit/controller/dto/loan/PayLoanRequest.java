@@ -1,4 +1,4 @@
-package com.casestudy.credit.controller.dto;
+package com.casestudy.credit.controller.dto.loan;
 
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotNull;

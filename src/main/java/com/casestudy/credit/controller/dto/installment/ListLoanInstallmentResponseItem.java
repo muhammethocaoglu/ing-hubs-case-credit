@@ -1,4 +1,4 @@
-package com.casestudy.credit.controller.dto;
+package com.casestudy.credit.controller.dto.installment;
 
 import lombok.*;
 
@@ -11,15 +11,17 @@ import java.time.LocalDate;
 @Getter
 @Setter
 @Builder
-public class ListLoanResponseItem {
+public class ListLoanInstallmentResponseItem {
 
     private Long id;
 
     private BigDecimal amount;
 
-    private Integer numberOfInstallment;
+    private BigDecimal paidAmount;
 
-    private LocalDate createDate;
+    private LocalDate dueDate;
+
+    private LocalDate paymentDate;
 
     private Boolean isPaid;
 }

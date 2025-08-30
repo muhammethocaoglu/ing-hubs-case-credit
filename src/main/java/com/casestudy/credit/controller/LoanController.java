@@ -1,6 +1,7 @@
 package com.casestudy.credit.controller;
 
-import com.casestudy.credit.controller.dto.*;
+import com.casestudy.credit.controller.dto.installment.ListLoanInstallmentResponseItem;
+import com.casestudy.credit.controller.dto.loan.*;
 import com.casestudy.credit.service.LoanService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -26,6 +27,11 @@ public class LoanController {
     @GetMapping("")
     public ResponseEntity<List<ListLoanResponseItem>> list(@Valid ListLoanRequest listLoanRequest) {
         return new ResponseEntity<>(loanService.list(listLoanRequest), HttpStatus.OK);
+    }
+
+    @GetMapping("/{id}/installments")
+    public ResponseEntity<List<ListLoanInstallmentResponseItem>> list(@PathVariable Long id) {
+        return new ResponseEntity<>(loanService.listInstallments(id), HttpStatus.OK);
     }
 
     @PostMapping("pay")
