@@ -10,6 +10,7 @@ import com.casestudy.credit.repository.CustomerRepository;
 import com.casestudy.credit.repository.LoanInstallmentRepository;
 import com.casestudy.credit.repository.LoanRepository;
 import com.casestudy.credit.repository.LoanSpecification;
+import com.casestudy.credit.util.Constants;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.core.Authentication;
@@ -20,6 +21,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -129,6 +131,7 @@ public class LoanService {
                     .build();
         }
         BigDecimal totalAmountSpent = BigDecimal.ZERO;
+        BigDecimal totalPaidInstallmentAmount = BigDecimal.ZERO;
         int numberOfInstallmentsPaid = 0;
         LocalDate currentDate = LocalDate.now();
         List<LoanInstallment> loanInstallmentList = loanInstallmentRepository
@@ -138,18 +141,20 @@ public class LoanService {
                     (payLoanRequest.getAmount().subtract(totalAmountSpent).compareTo(loanInstallment.getAmount()) < 0)) {
                 break;
             }
-            loanInstallment.setPaidAmount(loanInstallment.getAmount());
+            BigDecimal paidAmount = evaluatePaidAmount(loanInstallment);
+            loanInstallment.setPaidAmount(paidAmount);
             loanInstallment.setPaymentDate(currentDate);
             loanInstallment.setIsPaid(true);
             loanInstallmentRepository.save(loanInstallment);
             numberOfInstallmentsPaid++;
-            totalAmountSpent = totalAmountSpent.add(loanInstallment.getAmount());
+            totalAmountSpent = totalAmountSpent.add(paidAmount);
+            totalPaidInstallmentAmount = totalPaidInstallmentAmount.add(loanInstallment.getAmount());
         }
         boolean isLoanPaid = numberOfInstallmentsPaid == loanInstallmentList.size();
         if (totalAmountSpent.compareTo(BigDecimal.ZERO) > 0) {
             loan.setIsPaid(isLoanPaid);
             Customer customer = loan.getCustomer();
-            customer.setUsedCreditLimit(customer.getUsedCreditLimit().subtract(totalAmountSpent));
+            customer.setUsedCreditLimit(customer.getUsedCreditLimit().subtract(totalPaidInstallmentAmount));
             loanRepository.save(loan);
         }
 
@@ -158,6 +163,14 @@ public class LoanService {
                 .totalAmountSpent(totalAmountSpent)
                 .isLoanPaid(isLoanPaid)
                 .build();
+    }
+
+    private BigDecimal evaluatePaidAmount(LoanInstallment loanInstallment) {
+        long diffDays;
+        BigDecimal amount = loanInstallment.getAmount();
+        diffDays = ChronoUnit.DAYS.between(LocalDate.now(), loanInstallment.getDueDate());
+        BigDecimal discountMultiplier = new BigDecimal(diffDays).multiply(Constants.DISCOUNT_COEFFICIENT);
+        return amount.subtract(amount.multiply(discountMultiplier));
     }
 
 

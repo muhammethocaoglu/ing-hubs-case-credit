@@ -4,6 +4,7 @@ import com.casestudy.credit.controller.dto.customer.CreateCustomerRequest;
 import com.casestudy.credit.controller.dto.customer.CreateCustomerResponse;
 import com.casestudy.credit.service.CustomerService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -22,7 +23,7 @@ public class CustomerController {
     @PostMapping
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<CreateCustomerResponse> create(@RequestBody CreateCustomerRequest createCustomerRequest) {
-        return ResponseEntity.ok(customerService.create(createCustomerRequest));
+        return new ResponseEntity<>(customerService.create(createCustomerRequest), HttpStatus.CREATED);
     }
 
 }

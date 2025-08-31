@@ -12,6 +12,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.AccountStatusException;
 import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.InternalAuthenticationServiceException;
 import org.springframework.validation.FieldError;
 import org.springframework.validation.ObjectError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -92,8 +93,8 @@ public class RestResponseEntityExceptionHandler extends ResponseEntityExceptionH
         return ErrorMessage.builder().error("The JWT token has expired").build();
     }
 
-    @ExceptionHandler({UserNotFoundException.class})
-    @ResponseStatus(value = HttpStatus.FORBIDDEN)
+    @ExceptionHandler({UserNotFoundException.class, InternalAuthenticationServiceException.class})
+    @ResponseStatus(value = HttpStatus.NOT_FOUND)
     public ErrorMessage handleUserNotFound(Exception ex, WebRequest request) {
         return ErrorMessage.builder().error(ex.getMessage()).build();
     }

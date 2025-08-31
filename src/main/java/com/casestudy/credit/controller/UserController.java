@@ -23,8 +23,8 @@ public class UserController {
 
     private final UserService userService;
 
-    @GetMapping("/me")
-    public ResponseEntity<UserResponse> authenticatedUser() {
+    @GetMapping("/current")
+    public ResponseEntity<UserResponse> retrieveAuthenticatedUser() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         User user = (User) authentication.getPrincipal();
         return ResponseEntity.ok(UserResponse.builder()
@@ -50,7 +50,7 @@ public class UserController {
     @PostMapping
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<UserResponse> createAdministrator(@RequestBody RegisterUserRequest registerUserRequest) {
-        return ResponseEntity.ok(userService.createAdministrator(registerUserRequest));
+        return new ResponseEntity<>(userService.createAdministrator(registerUserRequest),  HttpStatus.CREATED);
     }
 
 }
